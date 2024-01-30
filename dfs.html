@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        canvas {
+            max-width: 100%;
+        }
+        #controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #algorithm{
+            font-family: monospace;
+        }
+    </style>
+
+    <title>Maze Solver</title>
+</head>
+<body>
+    <div id="controls">
+        <button id="setStartNode">Set Start Node</button>
+        <button id="setEndNode">Set End Node</button>
+        <button id="solveMaze">Solve Maze</button>
+        <div id="controls">
+            <!-- ... other controls ... -->
+            <label for="speedSlider">Speed:</label>
+            <input type="range" id="speedSlider" min="1" max="1000" value="500">
+        </div>
+        <div id="myFloatingWindow" class="floating-window">
+            <div id="algorithm">
+                <span id="step1">const stack = [{ node: startNode, path: [] }];</span><br>
+                <span id="step2">const visited = new Set();</span><br>
+                <span id="step3">while (stack.length > 0) {</span><br>
+                <span id="step4">&nbsp;&nbsp;const { node, path } = stack.pop();</span><br>
+                <span id="step5">&nbsp;&nbsp;if (node.row === endNode.row && node.col === endNode.col) {</span><br>
+                <span id="step6">&nbsp;&nbsp;&nbsp;&nbsp;drawSolutionPath(path);</span><br>
+                <span id="step7">&nbsp;&nbsp;&nbsp;&nbsp;return;</span><br>
+                <span id="step8">&nbsp;&nbsp;}</span><br>
+                <span id="step9">&nbsp;&nbsp;if (!visited.has(`${node.row}-${node.col}`)) {</span><br>
+                <span id="step10">&nbsp;&nbsp;&nbsp;&nbsp;visited.add(`${node.row}-${node.col}`);</span><br>
+                <span id="step11">&nbsp;&nbsp;&nbsp;&nbsp;const neighbors = getNeighbors(node);</span><br>
+                <span id="step12">&nbsp;&nbsp;&nbsp;&nbsp;for (const neighbor of neighbors) {</span><br>
+                <span id="step13">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stack.push({ node: neighbor, path: [...path, neighbor] });</span><br>
+                <span id="step14">&nbsp;&nbsp;&nbsp;&nbsp;}</span><br>
+                <span id="step15">&nbsp;&nbsp;}</span><br>
+                <span id="step16">}</span><br>
+            </div>
+        </div>
+    </div>
+    <div id="statusText">Status: Ready</div>
+    <canvas id="mazeCanvas"></canvas>
+    <script>
+        const COLOR_BLACK = '#000';
+        const COLOR_WHITE = '#fff';
+        const COLOR_START = '#00f';
+        const COLOR_END = '#f00';
+        const COLOR_SOLUTION_PATH = '#0f0';
+        const canvas = document.getElementById('mazeCanvas');
+        const canvasContext = canvas.getContext('2d');
+        let isDrawing = false;
+        let initialColor = 1;
+        let maze = initializeMaze();
+        let startNode = { row: 1, col: 1 };
+        let endNode = { row: maze.length - 2, col: maze[0].length - 2 };
+        let speed = 500;
+
+        function initializeMaze() {
+            const rows = 10; // Number of rows
+            const cols = 20; // Number of columns
+            const maze = Array.from({ length: rows }, () => Array(cols).fill(1));
+            
+            // Function to add frontiers
+            function addFrontier(row, col, frontiers) {
+                if (row >= 0 && row < rows && col >= 0 && col < cols && maze[row][col] === 1) {
+                    frontiers.push({row: row, col: col});
+                    maze[row][col] = 2; // Mark as frontier
+                }
+            }
+            
+            // Function to mark passage
+            function markPassage(row, col) {
+                maze[row][col] = 0;
+                if (row - 2 >= 0) addFrontier(row - 2, col, frontiers);
+                if (row + 2 < rows) addFrontier(row + 2, col, frontiers);
+                if (col - 2 >= 0) addFrontier(row, col - 2, frontiers);
+                if (col + 2 < cols) addFrontier(row, col + 2, frontiers);
+            }
+            
+            // Start with a random position
+            let startRow = Math.floor(Math.random() * (rows - 2)) + 1;
+            let startCol = Math.floor(Math.random() * (cols - 2)) + 1;
+            
+            let frontiers = [];
+            markPassage(startRow, startCol);
+            
+            while (frontiers.length > 0) {
+                let fIndex = Math.floor(Math.random() * frontiers.length);
+                let frontier = frontiers.splice(fIndex, 1)[0];
+                
+                let neighbors = [];
+                if (frontier.row >= 2 && maze[frontier.row - 2][frontier.col] === 0) neighbors.push({row: frontier.row - 1, col: frontier.col});
+                if (frontier.row < rows - 2 && maze[frontier.row + 2][frontier.col] === 0) neighbors.push({row: frontier.row + 1, col: frontier.col});
+                if (frontier.col >= 2 && maze[frontier.row][frontier.col - 2] === 0) neighbors.push({row: frontier.row, col: frontier.col - 1});
+                if (frontier.col < cols - 2 && maze[frontier.row][frontier.col + 2] === 0) neighbors.push({row: frontier.row, col: frontier.col + 1});
+                
+                if (neighbors.length > 0) {
+                    let n = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    maze[n.row][n.col] = 0;
+                    markPassage(frontier.row, frontier.col);
+                }
+            }
+            
+            // Ensure the borders are intact
+            for (let i = 0; i < rows; i++) {
+                maze[i][0] = 1;
+                maze[i][cols - 1] = 1;
+            }
+            for (let j = 0; j < cols; j++) {
+                maze[0][j] = 1;
+                maze[rows - 1][j] = 1;
+            }
+            
+            return maze;
+        }
+        
+        function updateStatus(text) {
+            console.log(text);
+            document.getElementById('statusText').textContent = `Status: ${text}`;
+        }
+        
+        // Function to draw a cell
+        function drawCell(row, col, color) {
+            const cellSize = canvas.width / maze[0].length;
+            canvasContext.fillStyle = color;
+            canvasContext.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+        }
+        // Function to draw the maze
+        function drawMaze() {
+            for (let row = 0; row < maze.length; row++) {
+                for (let col = 0; col < maze[0].length; col++) {
+                    const color = maze[row][col] ? COLOR_BLACK : COLOR_WHITE;
+                    drawCell(row, col, color);
+                }
+            }
+            
+            // Update maze array with the new start and end nodes
+            maze[startNode.row][startNode.col] = 0;
+            maze[endNode.row][endNode.col] = 0;
+            
+            drawCell(startNode.row, startNode.col, COLOR_START);
+            drawCell(endNode.row, endNode.col, COLOR_END);
+        }
+        
+        // Function to solve the maze
+        function solveMaze() {
+            const queue = [{ node: startNode, path: [] }];
+            const visited = new Set();
+            
+            while (queue.length > 0) {
+                const { node, path } = queue.shift();
+                
+                if (node.row === endNode.row && node.col === endNode.col) {
+                    // Maze is solved, draw the solution path
+                    drawSolutionPath(path);
+                    break;
+                }
+                
+                if (!visited.has(`${node.row}-${node.col}`)) {
+                    visited.add(`${node.row}-${node.col}`);
+                    
+                    // Add neighboring nodes to the queue
+                    const neighbors = getNeighbors(node);
+                    for (const neighbor of neighbors) {
+                        queue.push({ node: neighbor, path: [...path, neighbor] });
+                    }
+                }
+            }
+        }
+        
+        // Add this function to create a delay
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        
+        
+        // Updated solveMazeDFS function
+        async function solveMazeDFS() {
+            const stack = [{ node: startNode, path: [] }];
+            // updateStatus("Starting DFS...");
+            highlightStep(1); // Highlighting the initialization of the stack
+            await sleep(speed/2); // Adjust time as needed
+            const visited = new Set();
+            // updateStatus("Starting DFS...");
+            highlightStep(2);
+            await sleep(speed);
+            
+            highlightStep(3);
+            await sleep(speed);
+            while (stack.length > 0) {
+                highlightStep(4);
+                await sleep(speed);
+                const { node, path } = stack.pop();
+                updateStatus(`Exploring node at (${node.row}, ${node.col})`);
+                
+                // Visually mark the current node
+                if (!isStartOrEndNode(node)) {
+                    drawCell(node.row, node.col, 'blue'); // Color for the current node
+                    await sleep(speed/5); // Delay for visualization
+                }
+                
+                if (node.row === endNode.row && node.col === endNode.col) {
+                    // Path found, visualize it
+                    drawSolutionPath(path);
+                    highlightStep(6);
+                    await sleep(speed);
+                    updateStatus("Maze solved! Path found.");
+                    highlightStep(7);
+                    await sleep(speed);
+                    return; // Exit the function once the solution is found
+                }
+                
+                highlightStep(9);
+                await sleep(speed/2);
+                if (!visited.has(`${node.row}-${node.col}`)) {
+                    highlightStep(10);
+                    await sleep(speed/3);
+                    visited.add(`${node.row}-${node.col}`);
+                    highlightStep(11);
+                    await sleep(speed/3);
+                    path.push(node); // Add the node to the current path
+                    
+                    const neighbors = getNeighbors(node);
+                    highlightStep(12);
+                    await sleep(speed/3);
+                    for (const neighbor of neighbors) {
+                        if (!visited.has(`${neighbor.row}-${neighbor.col}`)) {
+                            highlightStep(13);
+                            await sleep(speed/3);
+                            stack.push({ node: neighbor, path: [...path] });
+                            updateStatus(`Adding neighbor at (${neighbor.row}, ${neighbor.col}) to stack`);
+                        }
+                    }
+                } else {
+                    // Backtracking, visually indicate it
+                    if (!isStartOrEndNode(node)) {
+                        drawCell(node.row, node.col, 'lightgrey');
+                        updateStatus(`Backtracking from (${node.row}, ${node.col})`);
+                        await sleep(100); // Delay for visualization
+                    }
+                }
+            }
+            
+            alert("No solution found!");
+        }
+        
+        // Helper function to check if a node is the start or end node
+        function isStartOrEndNode(node) {
+            return (node.row === startNode.row && node.col === startNode.col) || 
+            (node.row === endNode.row && node.col === endNode.col);
+        }
+        
+        
+        
+        // Function to get neighboring nodes
+        function getNeighbors(node) {
+            const neighbors = [];
+            const directions = [
+            { row: -1, col: 0 }, // Up
+            { row: 1, col: 0 },  // Down
+            { row: 0, col: -1 }, // Left
+            { row: 0, col: 1 }   // Right
+            ];
+            
+            for (const dir of directions) {
+                const newRow = node.row + dir.row;
+                const newCol = node.col + dir.col;
+                
+                if (maze[newRow] && maze[newRow][newCol] === 0) {
+                    neighbors.push({ row: newRow, col: newCol });
+                }
+            }
+            
+            return neighbors;
+        }
+        
+        // Function to draw the solution path
+        function drawSolutionPath(path) {
+            const cellSize = canvas.width / maze[0].length;
+            canvasContext.fillStyle = COLOR_SOLUTION_PATH;
+            
+            for (const node of path) {
+                drawCell(node.row, node.col, COLOR_SOLUTION_PATH);
+            }
+        }
+
+        // Function to handle the start of drawing
+        function startDrawing(event) {
+            isDrawing = true;
+            const clickedCol = Math.floor(event.offsetX / (canvas.width / maze[0].length));
+            const clickedRow = Math.floor(event.offsetY / (canvas.width / maze[0].length));
+            initialColor = maze[clickedRow][clickedCol] === 1 ? 0 : 1;
+            drawOnMouseMove(event);
+        }
+
+        // Function to handle drawing on mouse move
+        function drawOnMouseMove(event) {
+            if (isDrawing) {
+                const cellSize = canvas.width / maze[0].length;
+                const clickedCol = Math.floor(event.offsetX / cellSize);
+                const clickedRow = Math.floor(event.offsetY / cellSize);
+                
+                maze[clickedRow][clickedCol] = initialColor;
+                drawMaze();
+            }
+        }
+
+        // Function to handle stopping drawing
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        // Function to set the start node
+        function setStartNode() {
+            alert("Click on the desired cell to set the start node.");
+            canvas.addEventListener("click", function setStartNodeOnClick(event) {
+                const cellSize = canvas.width / maze[0].length;
+                const clickedCol = Math.floor(event.offsetX / cellSize);
+                const clickedRow = Math.floor(event.offsetY / cellSize);
+                startNode = { row: clickedRow, col: clickedCol };
+                drawMaze();
+                alert("Start node set successfully.");
+                canvas.removeEventListener("click", setStartNodeOnClick);
+            });
+        }
+
+        // Set end node function, modified for always active edit mode
+        function setEndNode() {
+            alert("Click on the desired cell to set the end node.");
+            canvas.addEventListener("click", function setEndNodeOnClick(event) {
+                const cellSize = canvas.width / maze[0].length;
+                const clickedCol = Math.floor(event.offsetX / cellSize);
+                const clickedRow = Math.floor(event.offsetY / cellSize);
+                endNode = { row: clickedRow, col: clickedCol };
+                drawMaze();
+                alert("End node set successfully.");
+                canvas.removeEventListener("click", setEndNodeOnClick);
+            });
+        }
+
+        // Update canvas size on window resize for responsiveness
+        function updateCanvasSize() {
+            canvas.width = window.innerWidth * 0.8; // Adjust the factor as needed
+            canvas.height = canvas.width / 2; // Adjust for the increased number of rows and columns
+            drawMaze();
+        }
+
+        function highlightStep(stepNumber) {
+            const steps = document.querySelectorAll('#algorithm span');
+            steps.forEach(step => step.style.backgroundColor = ''); // Reset all
+            document.querySelector(`#step${stepNumber}`).style.backgroundColor = 'yellow';
+        }
+
+
+        drawMaze();
+        updateCanvasSize();
+        window.addEventListener('resize', updateCanvasSize);
+        document.getElementById('setStartNode').addEventListener('click', setStartNode);
+        document.getElementById('setEndNode').addEventListener('click', setEndNode);
+        document.getElementById('solveMaze').addEventListener('click', async function() {
+            this.disabled = true;
+            await solveMazeDFS();
+            this.disabled = false;
+        });
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            speed = 1000 - this.value;
+            // Optionally, update some display element with the current speed
+            // e.g., document.getElementById('speedDisplay').textContent = `Speed: ${speed}ms`;
+        });
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', drawOnMouseMove);
+        canvas.addEventListener('mouseup', stopDrawing);
+    </script>
+    <link rel="stylesheet" href="floating/floating.css">
+    <script src="floating/floating.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Algorithms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            min-height: 100vh;
+        }
+        .bg-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .navbar a:not(:last-child) {
+            margin-right: 1rem;
+        }
+        .search-container {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 7rem 2rem;
+            width: 75%;
+            margin: auto;
+        }
+        .search-container h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .search-container p {
+            font-size: 1rem;
+            font-weight: 400;
+            margin-bottom: 2rem;
+        }
+        .search-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .search-button:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        .algo-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin: 0.5rem;
+        }
+        .algo-button:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 0.5rem 1rem;
+        }
+        .button-container {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient">
+    <div class="container mx-auto px-6 py-12">
+        <nav class="navbar flex justify-between items-center">
+            <div class="flex items-center">
+                <a href="#" class="text-lg font-semibold">Algorithm Visualizer</a>
+            </div>
+            <div class="flex items-center">
+                <a href="#">Created by Javed Ansari</a>
+            </div>
+        </nav>
+        <div class="search-container mt-24 text-center relative">
+            <a href="landing.html" class="back-button search-button"><i class="fas fa-arrow-left"></i> Back</a>
+            <div>
+                <h1>Select a Graph Algorithm</h1>
+                <p>Choose an algorithm to visualize and learn more about it.</p>
+            </div>
+            <div class="button-container">
+                <a href="dfs_search.html"><button class="algo-button">Depth-First Search (DFS)</button></a>
+                <a href="bfs_search.html"><button class="algo-button">Breadth-First Search (BFS)</button></a>
+                <a href="dijkstra_search.html"><button class="algo-button">Dijkstra's Search</button></a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
